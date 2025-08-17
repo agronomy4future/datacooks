@@ -1,0 +1,14 @@
+Package: datacooks
+Title: Diagnostic Tools and Outlier Detection Based on Cook's Distance
+Version: 0.0.0.9000
+Authors@R: 
+  person("JK", "Kim", , "kimjk@agronomy4future.com", role = c("aut", "cre"))
+Description: Provides a utility function for extracting regression diagnostics from linear
+    models, including predicted values, residuals, leverage, studentized residuals, and
+    Cook's distance. The function attaches these diagnostics to the original dataset
+    used in model fitting and automatically flags influential outliers. Includes an
+    option to return a cleaned dataset with outliers removed.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
