@@ -49,6 +49,9 @@ df1= datacooks(model, threshold= 4, clean= TRUE)
 # Default: threshold= 4, clean= FALSE
 df1= datacooks(model)
 
-■ code source: https://github.com/agronomy4future/datacooks
+■ Github: https://github.com/agronomy4future/datacooks
+■ Website: https://agronomy4future.com/archives/24565
+
+- All Rights Reserved © J.K Kim (kimjk@agronomy4future.com)
 
 }

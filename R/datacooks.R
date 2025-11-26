@@ -40,42 +40,42 @@
 #' # Default: threshold= 4, clean= FALSE
 #' df1= datacooks(model)
 #'
-#' ■ code source: https://github.com/agronomy4future/datacooks
+#' ■ Github: https://github.com/agronomy4future/datacooks
+#' ■ Website: https://agronomy4future.com/archives/24565
 #'
-datacooks= function(model, threshold = 4, clean = FALSE) {
+#' - All Rights Reserved © J.K Kim (kimjk@agronomy4future.com)
+#'
+datacooks = function(model, threshold = 4, clean = FALSE) {
 
-  # Get the original dataset used by the model
-  data_name= as.character(model$call$data)
-  df= eval(parse(text = data_name))
+  # Get model frame (only rows actually used in model)
+  df = model.frame(model)
 
   # Model parameters
-  p= length(coef(model)) # number of parameters (incl. intercept)
-  n= nrow(df) # number of observations
+  p = length(coef(model))          # number of parameters
+  n = nrow(df)                     # number of observations used
 
   # Predictions and diagnostics
-  df$prediction= predict(model)
-  df$residual= residuals(model)
-  df$leverage= hatvalues(model)
+  df$prediction = predict(model)
+  df$residual   = residuals(model)
+  df$leverage   = hatvalues(model)
 
-  # RMSE
-  RMSE= sqrt(sum(df$residual^2) / (n - p))
+  # RMSE using model residuals
+  RMSE = sqrt(sum(df$residual^2) / (n - p))
 
   # Internal Studentized Residuals
-  df$ISR= df$residual / (RMSE * sqrt(1 - df$leverage))
+  df$ISR = df$residual / (RMSE * sqrt(1 - df$leverage))
 
   # Cook's Distance
-  df$CooksD= (1/p) * df$ISR^2 * (df$leverage / (1 - df$leverage))
+  df$CooksD = (1 / p) * df$ISR^2 * (df$leverage / (1 - df$leverage))
 
   # Outlier classification
-  cutoff= threshold / (n - p)
-  df$category= ifelse(df$CooksD > cutoff, "outlier", "normal")
+  cutoff = threshold / (n - p)
+  df$category = ifelse(df$CooksD > cutoff, "outlier", "normal")
 
-  # If user wants only normal rows (i.e., cleaned data)
+  # Return cleaned or full diagnostics
   if (clean) {
-    cleaned= df[df$category != "outlier", ]
-    return(cleaned)
+    return(df[df$category == "normal", ])
+  } else {
+    return(df)
   }
-
-  # Otherwise return everything with diagnostics
-  return(df)
 }
