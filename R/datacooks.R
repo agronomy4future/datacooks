@@ -47,18 +47,28 @@
 #'
 datacooks= function(model, threshold= 4, clean= FALSE) {
 
-  # Reconstruct actual dataset used for modeling
-  df_model= model.frame(model)
-
-  # Get the original full dataset
+  # Original data
   data_name= as.character(model$call$data)
-  df_full= eval(parse(text= data_name))   # contains all columns
+  df_full= eval(parse(text = data_name))
 
-  # Model parameters
+  # Identify rows actually used in model
+  dropped= model$na.action
+  used_rows= setdiff(seq_len(nrow(df_full)), dropped)
+
+  # Model.frame rows match predict/model output length EXACTLY
+  n= length(used_rows)
   p= length(coef(model))
-  n= nrow(df_model)
 
-  # Predictions and diagnostics (computed on df_model)
+  # Prepare output
+  df_out= df_full
+  df_out$prediction= NA
+  df_out$residual= NA
+  df_out$leverage= NA
+  df_out$ISR= NA
+  df_out$CooksD= NA
+  df_out$category= NA
+
+  # Diagnostics
   prediction= predict(model)
   residual= residuals(model)
   leverage= hatvalues(model)
@@ -66,22 +76,20 @@ datacooks= function(model, threshold= 4, clean= FALSE) {
   RMSE= sqrt(sum(residual^2) / (n - p))
   ISR= residual / (RMSE * sqrt(1 - leverage))
   CooksD= (1/p) * ISR^2 * (leverage / (1 - leverage))
-
   cutoff= threshold / (n - p)
   category= ifelse(CooksD > cutoff, "outlier", "normal")
 
-  # Combine diagnostics with original dataset (same row order required)
-  df_out= cbind(df_full,
-                prediction,
-                residual,
-                leverage,
-                ISR,
-                CooksD,
-                category)
+  # Insert diagnostics EXACTLY for rows used by model
+  df_out$prediction[used_rows]= prediction
+  df_out$residual[used_rows]= residual
+  df_out$leverage[used_rows]= leverage
+  df_out$ISR[used_rows]= ISR
+  df_out$CooksD[used_rows]= CooksD
+  df_out$category[used_rows]= category
 
   # clean option
   if (clean) {
-    return(df_out[df_out$category!= "outlier", ])
+    return(df_out[df_out$category!= "outlier" | is.na(df_out$category), ])
   }
 
   return(df_out)
