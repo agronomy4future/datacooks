@@ -45,37 +45,46 @@
 #'
 #' - All Rights Reserved © J.K Kim (kimjk@agronomy4future.com)
 #'
-datacooks = function(model, threshold = 4, clean = FALSE) {
+datacooks= function(model, threshold= 4, clean= FALSE) {
 
-  # Get model frame (only rows actually used in model)
-  df = model.frame(model)
+  # Reconstruct actual dataset used for modeling
+  df_model= model.frame(model)
+
+  # Get the original full dataset
+  data_name= as.character(model$call$data)
+  df_full= eval(parse(text= data_name))   # contains all columns
 
   # Model parameters
-  p = length(coef(model))          # number of parameters
-  n = nrow(df)                     # number of observations used
+  p= length(coef(model))
+  n= nrow(df_model)
 
-  # Predictions and diagnostics
-  df$prediction = predict(model)
-  df$residual   = residuals(model)
-  df$leverage   = hatvalues(model)
+  # Predictions and diagnostics (computed on df_model)
+  prediction= predict(model)
+  residual= residuals(model)
+  leverage= hatvalues(model)
 
-  # RMSE using model residuals
-  RMSE = sqrt(sum(df$residual^2) / (n - p))
+  RMSE= sqrt(sum(residual^2) / (n - p))
+  ISR= residual / (RMSE * sqrt(1 - leverage))
+  CooksD= (1/p) * ISR^2 * (leverage / (1 - leverage))
 
-  # Internal Studentized Residuals
-  df$ISR = df$residual / (RMSE * sqrt(1 - df$leverage))
+  cutoff= threshold / (n - p)
+  category= ifelse(CooksD > cutoff, "outlier", "normal")
 
-  # Cook's Distance
-  df$CooksD = (1 / p) * df$ISR^2 * (df$leverage / (1 - df$leverage))
+  # Combine diagnostics with original dataset (same row order required)
+  df_out= cbind(df_full,
+                prediction,
+                residual,
+                leverage,
+                ISR,
+                CooksD,
+                category)
 
-  # Outlier classification
-  cutoff = threshold / (n - p)
-  df$category = ifelse(df$CooksD > cutoff, "outlier", "normal")
-
-  # Return cleaned or full diagnostics
+  # clean option
   if (clean) {
-    return(df[df$category == "normal", ])
-  } else {
-    return(df)
+    return(df_out[df_out$category!= "outlier", ])
   }
+
+  return(df_out)
 }
+
+# All Rights Reserved © J.K Kim (kimjk@agronomy4future.com). Last updated on 11/26/2025
