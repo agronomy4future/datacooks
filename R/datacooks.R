@@ -49,17 +49,17 @@ datacooks= function(model, threshold= 4, clean= FALSE) {
 
   # Original data
   data_name= as.character(model$call$data)
-  df_full= eval(parse(text = data_name))
+  df_full= eval(parse(text= data_name))
 
-  # Identify rows actually used in model
+  # Rows used in model (i.e., rows without missing predictors)
   dropped= model$na.action
   used_rows= setdiff(seq_len(nrow(df_full)), dropped)
 
-  # Model.frame rows match predict/model output length EXACTLY
+  # Model dimensions
   n= length(used_rows)
   p= length(coef(model))
 
-  # Prepare output
+  # Prepare output data frame
   df_out= df_full
   df_out$prediction= NA
   df_out$residual= NA
@@ -79,7 +79,7 @@ datacooks= function(model, threshold= 4, clean= FALSE) {
   cutoff= threshold / (n - p)
   category= ifelse(CooksD > cutoff, "outlier", "normal")
 
-  # Insert diagnostics EXACTLY for rows used by model
+  # Insert diagnostics for model-used rows
   df_out$prediction[used_rows]= prediction
   df_out$residual[used_rows]= residual
   df_out$leverage[used_rows]= leverage
@@ -87,12 +87,14 @@ datacooks= function(model, threshold= 4, clean= FALSE) {
   df_out$CooksD[used_rows]= CooksD
   df_out$category[used_rows]= category
 
-  # clean option
+  # ---- NEW PART: remove all rows with NA category ----
+  df_out= df_out[!is.na(df_out$category), ]
+
+  # clean option → remove outliers
   if (clean) {
-    return(df_out[df_out$category!= "outlier" | is.na(df_out$category), ])
+    df_out= df_out[df_out$category== "normal", ]
   }
 
   return(df_out)
 }
-
 # All Rights Reserved © J.K Kim (kimjk@agronomy4future.com). Last updated on 11/26/2025
